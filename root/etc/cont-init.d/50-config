@@ -210,12 +210,12 @@ else
 fi
 
 mkdir -p /config/keys/letsencrypt/
-if [ "$ONLY_SUBDOMAINS" = "true" ] && [ ! "$SUBDOMAINS" = "wildcard" ] ; then
-  DOMAIN="$(echo "$SUBDOMAINS" | tr ',' ' ' | awk '{print $1}').${URL}"
-  cp -r ../etc/letsencrypt/live/"$DOMAIN" /config/keys/letsencrypt/
-else
-  cp -r ../etc/letsencrypt/live/"$URL" /config/keys/letsencrypt/
-fi
+# if [ "$ONLY_SUBDOMAINS" = "true" ] && [ ! "$SUBDOMAINS" = "wildcard" ] ; then
+#   DOMAIN="$(echo "$SUBDOMAINS" | tr ',' ' ' | awk '{print $1}').${URL}"
+#   cp -r ../etc/letsencrypt/live/"$DOMAIN" /config/keys/letsencrypt/
+# else
+#   cp -r ../etc/letsencrypt/live/"$URL" /config/keys/letsencrypt/
+# fi
 
 # checking for changes in cert variables, revoking certs if necessary
 if [ ! "$URL" = "$ORIGURL" ] || [ ! "$SUBDOMAINS" = "$ORIGSUBDOMAINS" ] || [ ! "$ONLY_SUBDOMAINS" = "$ORIGONLY_SUBDOMAINS" ] || [ ! "$EXTRA_DOMAINS" = "$ORIGEXTRA_DOMAINS" ] || [ ! "$VALIDATION" = "$ORIGVALIDATION" ] || [ ! "$DNSPLUGIN" = "$ORIGDNSPLUGIN" ] || [ ! "$PROPAGATION" = "$ORIGPROPAGATION" ] || [ ! "$STAGING" = "$ORIGSTAGING" ] || [ ! "$DUCKDNSTOKEN" = "$ORIGDUCKDNSTOKEN" ]; then
@@ -246,6 +246,7 @@ if [ ! -f "/config/keys/letsencrypt/fullchain.pem" ]; then
  # shellcheck disable=SC2086
  certbot certonly --renew-by-default --server $ACMESERVER $PREFCHAL --rsa-key-size 4096 $EMAILPARAM --agree-tos $URL_REAL
   if [ -d /config/keys/letsencrypt ]; then
+    cp -r /etc/letsencrypt/live/$URL/* /config/keys/letsencrypt/
     cd /config/keys/letsencrypt || exit
   else
     if [ "$VALIDATION" = "dns" ]; then
@@ -264,10 +265,6 @@ if [ ! -f "/config/keys/letsencrypt/fullchain.pem" ]; then
 else
   echo "Certificate exists; parameters unchanged; starting nginx"
 fi
-
-# Copy new certs into etc
-cp {privkey,fullchain}.pem /etc/letsencrypt/live/"$URL"/
-cp priv-fullchain-bundle.pem /etc/letsencrypt/live/"$URL"/
 
 # create GeoIP2 folder symlink
 [[ -d /var/lib/libmaxminddb ]] && [[ ! -L /var/lib/libmaxminddb ]] && \
