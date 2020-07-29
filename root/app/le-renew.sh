@@ -23,3 +23,5 @@ else
     sleep 1 && \
     cat privkey.pem fullchain.pem > priv-fullchain-bundle.pem"
 fi
+
+cp -r * ../etc/letsencrypt/live/$URL"

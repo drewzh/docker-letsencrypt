@@ -36,8 +36,6 @@ done
 mkdir -p \
 	/config/{log/letsencrypt,log/fail2ban,etc/letsencrypt,fail2ban,crontabs,dns-conf,geoip2db} \
 	/var/run/fail2ban
-rm -rf /etc/letsencrypt
-ln -s /config/etc/letsencrypt /etc/letsencrypt
 
 # copy dns default configs
 cp -n /defaults/dns-conf/* /config/dns-conf/
@@ -211,13 +209,12 @@ else
   echo "http validation is selected"
 fi
 
-# setting the symlink for key location
-rm -rf /config/keys/letsencrypt
+mkdir -p /config/keys/letsencrypt/
 if [ "$ONLY_SUBDOMAINS" = "true" ] && [ ! "$SUBDOMAINS" = "wildcard" ] ; then
   DOMAIN="$(echo "$SUBDOMAINS" | tr ',' ' ' | awk '{print $1}').${URL}"
-  ln -s ../etc/letsencrypt/live/"$DOMAIN" /config/keys/letsencrypt
+  cp -r ../etc/letsencrypt/live/"$DOMAIN" /config/keys/letsencrypt/
 else
-  ln -s ../etc/letsencrypt/live/"$URL" /config/keys/letsencrypt
+  cp -r ../etc/letsencrypt/live/"$URL" /config/keys/letsencrypt/
 fi
 
 # checking for changes in cert variables, revoking certs if necessary
@@ -268,11 +265,16 @@ else
   echo "Certificate exists; parameters unchanged; starting nginx"
 fi
 
+# Copy new certs into etc
+cp {privkey,fullchain}.pem /etc/letsencrypt/live/"$URL"/
+cp priv-fullchain-bundle.pem /etc/letsencrypt/live/"$URL"/
+
 # create GeoIP2 folder symlink
 [[ -d /var/lib/libmaxminddb ]] && [[ ! -L /var/lib/libmaxminddb ]] && \
   rm -rf /var/lib/libmaxminddb
 [[ ! -d /var/lib/libmaxminddb ]] && \
-  ln -s /config/geoip2db /var/lib/libmaxminddb
+  mkdir /var/lib/libmaxminddb && cp -r /config/geoip2db/ /var/lib/libmaxminddb/
+  # ln -s /config/geoip2db /var/lib/libmaxminddb
 # check GeoIP2 database
 if [ -n "$MAXMINDDB_LICENSE_KEY" ]; then
   sed -i "s|.*MAXMINDDB_LICENSE_KEY.*|MAXMINDDB_LICENSE_KEY=\"${MAXMINDDB_LICENSE_KEY}\"|g" /etc/conf.d/libmaxminddb
